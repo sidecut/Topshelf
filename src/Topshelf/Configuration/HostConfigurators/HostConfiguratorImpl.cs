@@ -106,6 +106,16 @@ namespace Topshelf.HostConfigurators
             _settings.InstanceName = instanceName;
         }
 
+        public void SetStartTimeout(TimeSpan startTimeOut)
+        {
+          _settings.StartTimeOut = startTimeOut;
+        }
+
+        public void SetStopTimeout(TimeSpan stopTimeOut)
+        {
+          _settings.StopTimeOut = stopTimeOut;
+        }
+
         public void EnablePauseAndContinue()
         {
             _settings.CanPauseAndContinue = true;
@@ -179,7 +189,7 @@ namespace Topshelf.HostConfigurators
                       .InfoFormat("{0} v{1}, .NET Framework v{2}", type.Namespace, type.Assembly.GetName().Version,
                           Environment.Version);
 
-            EnvironmentBuilder environmentBuilder = _environmentBuilderFactory();
+            EnvironmentBuilder environmentBuilder = _environmentBuilderFactory(this);
 
             HostEnvironment environment = environmentBuilder.Build();
 
@@ -214,9 +224,9 @@ namespace Topshelf.HostConfigurators
             return new RunBuilder(environment, settings);
         }
 
-        static EnvironmentBuilder DefaultEnvironmentBuilderFactory()
+        static EnvironmentBuilder DefaultEnvironmentBuilderFactory(HostConfigurator configurator)
         {
-            return new WindowsHostEnvironmentBuilder();
+            return new WindowsHostEnvironmentBuilder(configurator);
         }
     }
 }

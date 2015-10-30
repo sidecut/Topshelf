@@ -34,6 +34,7 @@ namespace Topshelf.Hosts
         readonly HostSettings _settings;
         int _deadThread;
 
+        TopshelfExitCode _exitCode;
         ManualResetEvent _exit;
         volatile bool _hasCancelled;
 
@@ -85,6 +86,7 @@ namespace Topshelf.Hosts
                 _log.Debug("Starting up as a console application");
 
                 _exit = new ManualResetEvent(false);
+                _exitCode = TopshelfExitCode.Ok;
 
                 Console.Title = _settings.DisplayName;
                 Console.CancelKeyPress += HandleCancelKeyPress;
@@ -115,7 +117,7 @@ namespace Topshelf.Hosts
                 HostLogger.Shutdown();
             }
 
-            return TopshelfExitCode.Ok;
+            return _exitCode;
         }
 
 
@@ -144,8 +146,11 @@ namespace Topshelf.Hosts
         {
             _log.Fatal("The service threw an unhandled exception", (Exception)e.ExceptionObject);
 
+            HostLogger.Shutdown();
+
             if (e.IsTerminating)
             {
+                _exitCode = TopshelfExitCode.UnhandledServiceException;
                 _exit.Set();
 
 #if !NET35
@@ -207,8 +212,8 @@ namespace Topshelf.Hosts
             _log.Info("Control+C detected, attempting to stop service.");
             if (_serviceHandle.Stop(this))
             {
-                _exit.Set();
                 _hasCancelled = true;
+                _exit.Set();
             }
             else
             {

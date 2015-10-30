@@ -131,20 +131,61 @@ namespace Topshelf.Runtime.Windows
             WINSTA_ALL_ACCESS = 0x0000037f
         }
 
+        [Flags]
+        public enum SYSTEM_ACCESS : uint
+        {
+            SE_PRIVILEGE_ENABLED = 0x00000002,
+            TOKEN_QUERY = 0x00000008,
+            TOKEN_ADJUST_PRIVILEGES = 0x00000020
+        }
+
         [DllImport("advapi32.dll", EntryPoint = "OpenSCManagerW", ExactSpelling = true, CharSet = CharSet.Unicode,
             SetLastError = true)]
-        public static extern IntPtr OpenSCManager(string machineName, string databaseName, uint dwAccess);
+        public static extern SafeTokenHandle OpenSCManager(string machineName, string databaseName, uint dwAccess);
 
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool CloseServiceHandle(IntPtr hSCObject);
+        public static extern bool CloseServiceHandle(SafeTokenHandle hSCObject);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern IntPtr OpenService(IntPtr hSCManager, string lpServiceName, uint dwDesiredAccess);
+        public static extern SafeTokenHandle OpenService(SafeTokenHandle hSCManager, string lpServiceName, uint dwDesiredAccess);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern bool ChangeServiceConfig2(IntPtr serviceHandle, uint infoLevel,
+        public static extern bool ChangeServiceConfig2(SafeTokenHandle serviceHandle, uint infoLevel,
             IntPtr lpInfo);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, out SafeTokenHandle TokenHandle);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool AdjustTokenPrivileges(SafeTokenHandle TokenHandle,
+            [MarshalAs(UnmanagedType.Bool)]bool DisableAllPrivileges,
+            ref TOKEN_PRIVILEGES NewState,
+            UInt32 BufferLength,
+            IntPtr PreviousState,
+            IntPtr ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+
+        public struct LUID
+        {
+            public int LowPart;
+            public int HighPart;
+        }
+        public struct LUID_AND_ATTRIBUTES
+        {
+            public LUID pLuid;
+            public int Attributes;
+        }
+        public struct TOKEN_PRIVILEGES
+        {
+            public int PrivilegeCount;
+            public LUID_AND_ATTRIBUTES Privileges;
+        }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct SERVICE_FAILURE_ACTIONS
